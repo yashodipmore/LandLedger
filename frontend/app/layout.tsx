@@ -1,9 +1,16 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Work_Sans, Open_Sans } from "next/font/google"
+import { Work_Sans, Open_Sans, Poppins } from "next/font/google"
 import { AuthProvider } from "@/context/AuthContext"
 import { Navbar } from "@/components/layout/Navbar"
 import "./globals.css"
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-poppins",
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+})
 
 const workSans = Work_Sans({
   subsets: ["latin"],
@@ -31,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${workSans.variable} ${openSans.variable} antialiased`}>
+    <html lang="en" className={`${poppins.variable} ${workSans.variable} ${openSans.variable} antialiased`}>
       <body className="font-sans">
         <AuthProvider>
           <div className="min-h-screen bg-background">

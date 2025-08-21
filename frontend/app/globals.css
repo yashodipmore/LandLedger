@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -40,6 +41,7 @@
   --sidebar-ring: oklch(0.578 0.148 233.23 / 0.5); /* blue ring */
   --font-open-sans: "Open Sans", sans-serif;
   --font-work-sans: "Work Sans", sans-serif;
+  --font-poppins: "Poppins", sans-serif;
 }
 
 .dark {
@@ -114,8 +116,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  /* Added font family mappings for Work Sans and Open Sans */
-  --font-sans: var(--font-open-sans);
+  /* Updated font family mappings with Poppins as primary */
+  --font-sans: var(--font-poppins);
   --font-serif: var(--font-work-sans);
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -126,5 +128,22 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-poppins);
+    /* VERY DARK Grid paper background - Super visible */
+    background-image: 
+      linear-gradient(rgb(59, 130, 246, 0.7) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(59, 130, 246, 0.7) 1px, transparent 1px),
+      linear-gradient(rgb(30, 58, 138, 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(30, 58, 138, 0.5) 1px, transparent 1px);
+    background-size: 
+      25px 25px,
+      25px 25px,
+      125px 125px,
+      125px 125px;
+    background-position: 
+      0 0,
+      0 0,
+      0 0,
+      0 0;
   }
 }
