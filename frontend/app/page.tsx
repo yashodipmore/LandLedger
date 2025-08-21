@@ -4,6 +4,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Footer } from "@/components/layout/Footer"
 import { Shield, Users, Building, Search, FileCheck, BarChart3 } from "lucide-react"
 
 const fadeInUp = {
@@ -22,7 +23,7 @@ const staggerContainer = {
 
 const scaleOnHover = {
   whileHover: { scale: 1.05 },
-  transition: { type: "spring", stiffness: 300 },
+  whileTap: { scale: 0.95 },
 }
 
 export default function HomePage() {
@@ -43,9 +44,28 @@ export default function HomePage() {
       <section className="relative py-20 px-4 sm:px-6 lg:px-8 z-10">
         <div className="max-w-7xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <h1 className="font-sans font-bold text-4xl sm:text-5xl lg:text-6xl text-foreground mb-6 tracking-tight">
-              Land<span className="text-primary">Ledger</span>
-            </h1>
+            {/* Professional Logo */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="flex items-center space-x-3">
+                {/* Logo Icon */}
+                <div className="relative">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary via-secondary to-accent rounded-xl shadow-lg flex items-center justify-center transform rotate-12">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center transform -rotate-12">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 9L12 2L21 9V20C21 21.1046 20.1046 22 19 22H5C3.89543 22 3 21.1046 3 20V9Z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                        <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" fill="none"/>
+                        <circle cx="12" cy="8" r="1.5" fill="currentColor"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shadow-md"></div>
+                </div>
+                {/* Logo Text */}
+                <h1 className="font-sans font-bold text-4xl sm:text-5xl lg:text-6xl text-foreground tracking-tight">
+                  Land<span className="text-primary">Ledger</span>
+                </h1>
+              </div>
+            </div>
             <p className="font-medium text-xl sm:text-2xl text-primary mb-4 tracking-wide">
               Transparent, Tamper-Proof Land Registry
             </p>
@@ -263,42 +283,7 @@ export default function HomePage() {
       </motion.section>
 
       {/* Footer */}
-      <footer className="relative bg-gradient-to-br from-muted/50 via-background to-primary/5 py-16 px-4 sm:px-6 lg:px-8 border-t border-border/50">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.01)_1px,transparent_1px)] bg-[size:80px_80px]"></div>
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <motion.div 
-              className="flex items-center space-x-3 mb-6 md:mb-0"
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Building className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <span className="font-sans font-bold text-xl tracking-tight">
-                  Land<span className="text-primary">Ledger</span>
-                </span>
-                <p className="text-sm text-muted-foreground font-medium">Blockchain Land Registry</p>
-              </div>
-            </motion.div>
-            <motion.div
-              className="text-center md:text-right"
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                © 2025 LandLedger. Built with <span className="text-primary font-semibold">blockchain technology</span><br />
-                for a transparent future.
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext"
 import { OwnedPropertiesList } from "@/components/owner/OwnedPropertiesList"
 import { TransferLandForm } from "@/components/owner/TransferLandForm"
 import { NotificationCenter } from "@/components/owner/NotificationCenter"
+import { Footer } from "@/components/layout/Footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Building, ArrowRightLeft, Bell, Info } from "lucide-react"
@@ -176,6 +177,9 @@ export default function OwnerPortalPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }

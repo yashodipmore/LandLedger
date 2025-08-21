@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { useAuth } from "@/context/AuthContext"
 import { RegisterLandForm } from "@/components/official/RegisterLandForm"
 import { TransferApprovalTable } from "@/components/official/TransferApprovalTable"
+import { Footer } from "@/components/layout/Footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Shield, FileText, CheckSquare, AlertTriangle } from "lucide-react"
@@ -130,6 +131,9 @@ export default function OfficialPortalPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }
