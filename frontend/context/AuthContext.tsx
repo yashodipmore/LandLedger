@@ -1,20 +1,19 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { useWeb3Context } from "./Web3Context"
 
 export type UserRole = "citizen" | "official" | "owner" | null
 
 interface User {
-  id: string
-  name: string
-  email: string
+  walletAddress: string
   role: UserRole
-  walletAddress?: string
+  name?: string
 }
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string, role: UserRole) => Promise<boolean>
+  setUserRole: (role: UserRole) => void
   logout: () => void
   isAuthenticated: boolean
   isLoading: boolean
@@ -24,49 +23,64 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const web3Context = useWeb3Context()
+  
+  const { account, isConnected } = web3Context || { account: null, isConnected: false }
 
   useEffect(() => {
-    // Check for stored auth data on mount
-    const storedUser = localStorage.getItem("landledger_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
-    setIsLoading(false)
+    setMounted(true)
   }, [])
 
-  const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
-    setIsLoading(true)
-
-    // Mock authentication - in real app, this would call an API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const mockUser: User = {
-      id: `user_${Date.now()}`,
-      name: email.split("@")[0],
-      email,
-      role,
-      walletAddress: role !== "citizen" ? `0x${Math.random().toString(16).substr(2, 40)}` : undefined,
+  useEffect(() => {
+    if (!mounted) return
+    
+    if (isConnected && account) {
+      // Check if user already has a role stored
+      const storedRole = localStorage.getItem(`landledger_role_${account}`)
+      if (storedRole) {
+        setUser({
+          walletAddress: account,
+          role: storedRole as UserRole,
+          name: `User ${account.substring(0, 6)}...${account.substring(38)}`
+        })
+      } else {
+        // New wallet connection - needs role selection
+        setUser({
+          walletAddress: account,
+          role: null,
+          name: `User ${account.substring(0, 6)}...${account.substring(38)}`
+        })
+      }
+    } else {
+      // Wallet disconnected
+      setUser(null)
     }
+  }, [account, isConnected, mounted])
 
-    setUser(mockUser)
-    localStorage.setItem("landledger_user", JSON.stringify(mockUser))
-    setIsLoading(false)
-    return true
+  const setUserRole = (role: UserRole) => {
+    if (user && account) {
+      const updatedUser = { ...user, role }
+      setUser(updatedUser)
+      localStorage.setItem(`landledger_role_${account}`, role || '')
+    }
   }
 
   const logout = () => {
+    if (account) {
+      localStorage.removeItem(`landledger_role_${account}`)
+    }
     setUser(null)
-    localStorage.removeItem("landledger_user")
   }
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        login,
+        setUserRole,
         logout,
-        isAuthenticated: !!user,
+        isAuthenticated: isConnected && !!user?.role,
         isLoading,
       }}
     >

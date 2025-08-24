@@ -1,11 +1,13 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Activity, Building, ArrowRightLeft, FileCheck, User, Clock, RefreshCw } from "lucide-react"
+import { Activity, Building, ArrowRightLeft, FileCheck, User, Clock, RefreshCw, Loader2 } from "lucide-react"
 import { formatDate } from "@/utils/helpers"
+import { getActivityFeed, type ActivityEvent } from "@/services/api"
 
 interface ActivityItem {
   id: string
@@ -18,70 +20,32 @@ interface ActivityItem {
   status?: "completed" | "pending" | "approved" | "rejected"
 }
 
-// Mock activity data
-const mockActivities: ActivityItem[] = [
-  {
-    id: "1",
-    type: "registration",
-    title: "New Land Registration",
-    description: "Property LD003 registered by John Smith",
-    timestamp: "2024-03-15T10:30:00Z",
-    landId: "LD003",
-    user: "John Smith",
-    status: "completed",
-  },
-  {
-    id: "2",
-    type: "transfer",
-    title: "Transfer Request Submitted",
-    description: "Transfer request for LD001 from Alice Johnson to Bob Wilson",
-    timestamp: "2024-03-15T09:15:00Z",
-    landId: "LD001",
-    user: "Alice Johnson",
-    status: "pending",
-  },
-  {
-    id: "3",
-    type: "approval",
-    title: "Transfer Approved",
-    description: "Government official approved transfer for LD002",
-    timestamp: "2024-03-15T08:45:00Z",
-    landId: "LD002",
-    user: "Gov. Official",
-    status: "approved",
-  },
-  {
-    id: "4",
-    type: "verification",
-    title: "Document Verified",
-    description: "Property document for LD001 successfully verified",
-    timestamp: "2024-03-15T08:00:00Z",
-    landId: "LD001",
-    status: "completed",
-  },
-  {
-    id: "5",
-    type: "registration",
-    title: "New Land Registration",
-    description: "Property LD004 registered by Sarah Davis",
-    timestamp: "2024-03-14T16:20:00Z",
-    landId: "LD004",
-    user: "Sarah Davis",
-    status: "completed",
-  },
-  {
-    id: "6",
-    type: "transfer",
-    title: "Transfer Completed",
-    description: "Ownership of LD005 transferred to Michael Brown",
-    timestamp: "2024-03-14T14:10:00Z",
-    landId: "LD005",
-    user: "Michael Brown",
-    status: "completed",
-  },
-]
-
 export function ActivityFeed() {
+  const [activities, setActivities] = useState<ActivityEvent[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  useEffect(() => {
+    loadActivityFeed()
+  }, [])
+
+  const loadActivityFeed = async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true)
+    } else {
+      setIsLoading(true)
+    }
+
+    try {
+      const activityData = await getActivityFeed(10)
+      setActivities(activityData)
+    } catch (error) {
+      console.error("Failed to load activity feed:", error)
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }
   const getActivityIcon = (type: string) => {
     switch (type) {
       case "registration":
@@ -134,6 +98,19 @@ export function ActivityFeed() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-secondary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading activity feed...</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
       <Card>
@@ -142,12 +119,22 @@ export function ActivityFeed() {
             <div>
               <CardTitle className="flex items-center space-x-2">
                 <Activity className="h-5 w-5" />
-                <span>Recent Activity</span>
+                <span>Blockchain Activity</span>
               </CardTitle>
-              <CardDescription>Latest system activities and transactions</CardDescription>
+              <CardDescription>Latest blockchain transactions and system events</CardDescription>
             </div>
-            <Button variant="outline" size="sm" className="bg-transparent">
-              <RefreshCw className="h-4 w-4 mr-2" />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-transparent"
+              onClick={() => loadActivityFeed(true)}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
               Refresh
             </Button>
           </div>
@@ -155,7 +142,7 @@ export function ActivityFeed() {
         <CardContent>
           <div className="space-y-4">
             <AnimatePresence>
-              {mockActivities.map((activity, index) => (
+              {activities.map((activity, index) => (
                 <motion.div
                   key={activity.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -168,10 +155,12 @@ export function ActivityFeed() {
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">{activity.title}</h4>
                       <div className="flex items-center space-x-2">
-                        {activity.status && getStatusBadge(activity.status)}
+                        <Badge variant="default" className="bg-green-100 text-green-800">
+                          Blockchain
+                        </Badge>
                         <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          <span>{formatTimestamp(activity.timestamp)}</span>
+                          <span>{formatTimestamp(activity.date)}</span>
                         </div>
                       </div>
                     </div>
@@ -182,10 +171,10 @@ export function ActivityFeed() {
                           {activity.landId}
                         </Badge>
                       )}
-                      {activity.user && (
+                      {activity.userAddress && (
                         <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                           <User className="h-3 w-3" />
-                          <span>{activity.user}</span>
+                          <span>{activity.userAddress.substring(0, 6)}...{activity.userAddress.substring(38)}</span>
                         </div>
                       )}
                     </div>
@@ -196,11 +185,17 @@ export function ActivityFeed() {
           </div>
 
           {/* Load More */}
-          <div className="text-center mt-6">
-            <Button variant="outline" className="bg-transparent">
-              Load More Activities
-            </Button>
-          </div>
+          {activities.length >= 10 && (
+            <div className="text-center mt-6">
+              <Button 
+                variant="outline" 
+                className="bg-transparent"
+                onClick={() => loadActivityFeed()}
+              >
+                Load More Activities
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

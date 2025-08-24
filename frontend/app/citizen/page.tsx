@@ -25,11 +25,12 @@ export default function CitizenPortalPage() {
 
   useState(() => {
     const loadMapData = async () => {
+      // Load initial properties for map view
       try {
-        const sampleResults = await searchLand("sample")
-        setMapLands(sampleResults)
+        const initialResults = await searchLand("")
+        setMapLands(initialResults)
       } catch (error) {
-        console.error("Failed to load map data:", error)
+        console.error("Failed to load initial properties:", error)
       }
     }
     loadMapData()

@@ -1,71 +1,84 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useAuth } from "@/context/AuthContext"
+import { useWeb3Context } from "@/context/Web3Context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Shield, Users, Building, ArrowLeft } from "lucide-react"
+import { Shield, Users, Building, ArrowLeft, Wallet, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import type { UserRole } from "@/context/AuthContext"
 
 const roleOptions = [
-  { value: "citizen", label: "Citizen", icon: Users, description: "Search and verify land records" },
-  { value: "official", label: "Government Official", icon: Shield, description: "Register land and approve transfers" },
-  { value: "owner", label: "Property Owner", icon: Building, description: "Manage and transfer properties" },
+  { 
+    value: "citizen", 
+    label: "Citizen", 
+    icon: Users, 
+    description: "Search and verify land records on blockchain",
+    features: ["View property details", "Verify documents", "Search land registry"]
+  },
+  { 
+    value: "official", 
+    label: "Government Official", 
+    icon: Shield, 
+    description: "Register land and approve transfers on blockchain",
+    features: ["Register new properties", "Approve transfers", "Verify documents", "Manage registry"]
+  },
+  { 
+    value: "owner", 
+    label: "Property Owner", 
+    icon: Building, 
+    description: "Manage and transfer your properties on blockchain",
+    features: ["View owned properties", "Transfer ownership", "Get QR codes", "Track history"]
+  },
 ]
 
 export default function AuthPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [role, setRole] = useState<UserRole>(null)
+  const [selectedRole, setSelectedRole] = useState<UserRole>(null)
   const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  const { user, setUserRole, isAuthenticated } = useAuth()
+  const { account, isConnected, connectWallet, isLoading: web3Loading, error: web3Error } = useWeb3Context()
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email || !password || !role) {
-      setError("Please fill in all fields")
+  useEffect(() => {
+    if (isAuthenticated && user?.role) {
+      // Redirect based on role
+      switch (user.role) {
+        case "citizen":
+          router.push("/citizen")
+          break
+        case "official":
+          router.push("/official")
+          break
+        case "owner":
+          router.push("/owner")
+          break
+        default:
+          break
+      }
+    }
+  }, [isAuthenticated, user?.role, router])
+
+  const handleConnectWallet = async () => {
+    setError("")
+    try {
+      await connectWallet()
+    } catch (err) {
+      setError("Failed to connect wallet. Please try again.")
+    }
+  }
+
+  const handleRoleSelection = () => {
+    if (!selectedRole) {
+      setError("Please select your role")
       return
     }
-
-    setIsLoading(true)
-    setError("")
-
-    try {
-      const success = await login(email, password, role)
-      if (success) {
-        // Redirect based on role
-        switch (role) {
-          case "citizen":
-            router.push("/citizen")
-            break
-          case "official":
-            router.push("/official")
-            break
-          case "owner":
-            router.push("/owner")
-            break
-          default:
-            router.push("/")
-        }
-      } else {
-        setError("Invalid credentials")
-      }
-    } catch (err) {
-      setError("Login failed. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
+    setUserRole(selectedRole)
   }
 
   return (
@@ -81,84 +94,109 @@ export default function AuthPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Link>
-          <h2 className="font-serif font-bold text-3xl text-foreground">Sign In to LandLedger</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Access your portal based on your role in the system</p>
+          <h2 className="font-serif font-bold text-3xl text-foreground">Connect to LandLedger</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Secure blockchain authentication via MetaMask wallet
+          </p>
         </div>
 
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="font-serif">Authentication</CardTitle>
-            <CardDescription>Enter your credentials to access your portal</CardDescription>
+            <CardTitle className="font-serif flex items-center space-x-2">
+              <Wallet className="h-5 w-5" />
+              <span>Blockchain Authentication</span>
+            </CardTitle>
+            <CardDescription>Connect your wallet and select your role to access the platform</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+          <CardContent className="space-y-6">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="role">Select Your Role</Label>
-                <Select value={role || ""} onValueChange={(value) => setRole(value as UserRole)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose your role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleOptions.map((option) => {
-                      const Icon = option.icon
-                      return (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center space-x-2">
-                            <Icon className="h-4 w-4" />
-                            <span>{option.label}</span>
-                          </div>
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
-                {role && (
-                  <p className="text-sm text-muted-foreground">
-                    {roleOptions.find((r) => r.value === role)?.description}
-                  </p>
-                )}
+            {web3Error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{web3Error}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Wallet Connection Status */}
+            {isConnected ? (
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Wallet connected: {account?.substring(0, 6)}...{account?.substring(38)}
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="space-y-4">
+                <Button
+                  onClick={handleConnectWallet}
+                  disabled={web3Loading}
+                  className="w-full"
+                  size="lg"
+                >
+                  {web3Loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Connect MetaMask Wallet
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Connect your MetaMask wallet for secure blockchain authentication
+                </p>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                />
+            {/* Role Selection */}
+            {isConnected && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Select Your Role</label>
+                  <Select value={selectedRole || ""} onValueChange={(value) => setSelectedRole(value as UserRole)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleOptions.map((option) => {
+                        const Icon = option.icon
+                        return (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex items-center space-x-2">
+                              <Icon className="h-4 w-4" />
+                              <span>{option.label}</span>
+                            </div>
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
+                  {selectedRole && (
+                    <p className="text-sm text-muted-foreground">
+                      {roleOptions.find((r) => r.value === selectedRole)?.description}
+                    </p>
+                  )}
+                </div>
+
+                <Button
+                  onClick={handleRoleSelection}
+                  disabled={!selectedRole}
+                  className="w-full"
+                  size="lg"
+                >
+                  Access Platform
+                </Button>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing In..." : "Sign In"}
-              </Button>
-            </form>
-
-            <div className="mt-6 pt-6 border-t border-border">
-              <p className="text-xs text-muted-foreground text-center">
-                Demo credentials: Use any email/password combination with your selected role
-              </p>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -171,15 +209,23 @@ export default function AuthPage() {
                 key={option.value}
                 whileHover={{ scale: 1.02 }}
                 className={`p-4 rounded-lg border transition-colors cursor-pointer ${
-                  role === option.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                  selectedRole === option.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
                 }`}
-                onClick={() => setRole(option.value as UserRole)}
+                onClick={() => setSelectedRole(option.value as UserRole)}
               >
-                <div className="flex items-center space-x-3">
-                  <Icon className={`h-5 w-5 ${role === option.value ? "text-primary" : "text-muted-foreground"}`} />
-                  <div>
+                <div className="flex items-start space-x-3">
+                  <Icon className={`h-5 w-5 mt-0.5 ${selectedRole === option.value ? "text-primary" : "text-muted-foreground"}`} />
+                  <div className="space-y-1">
                     <h3 className="font-medium text-sm">{option.label}</h3>
                     <p className="text-xs text-muted-foreground">{option.description}</p>
+                    <div className="space-y-1">
+                      {option.features.map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-1">
+                          <div className="w-1 h-1 bg-primary/60 rounded-full"></div>
+                          <span className="text-xs text-muted-foreground">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </motion.div>

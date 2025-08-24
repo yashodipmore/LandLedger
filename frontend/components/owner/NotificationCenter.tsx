@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Bell, CheckCircle, Clock, XCircle, Trash2, BookMarkedIcon as MarkAsUnread } from "lucide-react"
+import { Bell, CheckCircle, Clock, XCircle, Trash2, BookMarkedIcon as MarkAsUnread, Loader2 } from "lucide-react"
 import { formatDate } from "@/utils/helpers"
+import { useAuth } from "@/context/AuthContext"
+import { getUserNotifications, markNotificationAsRead, deleteNotification as deleteNotificationAPI } from "@/services/api"
 
 interface Notification {
   id: string
@@ -18,39 +20,40 @@ interface Notification {
   landId?: string
 }
 
-// Mock notifications data
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "pending",
-    title: "Transfer Request Submitted",
-    message: "Your transfer request for property LD001 has been submitted and is awaiting government approval.",
-    date: "2024-03-15",
-    read: false,
-    landId: "LD001",
-  },
-  {
-    id: "2",
-    type: "success",
-    title: "Property Registration Complete",
-    message: "Your property LD002 has been successfully registered on the blockchain.",
-    date: "2024-03-10",
-    read: true,
-    landId: "LD002",
-  },
-  {
-    id: "3",
-    type: "info",
-    title: "System Maintenance Notice",
-    message: "Scheduled maintenance will occur on March 20th from 2:00 AM to 4:00 AM UTC.",
-    date: "2024-03-08",
-    read: true,
-  },
-]
-
 export function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
+  const { user } = useAuth()
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<"all" | "unread">("all")
+
+  useEffect(() => {
+    loadNotifications()
+  }, [user])
+
+  const loadNotifications = async () => {
+    if (!user?.walletAddress) return
+
+    setIsLoading(true)
+    try {
+      const userNotifications = await getUserNotifications(user.walletAddress)
+      setNotifications(userNotifications)
+    } catch (error) {
+      console.error("Failed to load notifications:", error)
+      // If API fails, show system notification
+      setNotifications([
+        {
+          id: "system-1",
+          type: "info",
+          title: "Welcome to LandLedger",
+          message: "Your blockchain-based land registry system is ready. All your property transactions will be securely recorded.",
+          date: new Date().toISOString(),
+          read: false,
+        }
+      ])
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -82,10 +85,15 @@ export function NotificationCenter() {
     }
   }
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) => (notification.id === id ? { ...notification, read: true } : notification)),
-    )
+  const markAsRead = async (id: string) => {
+    try {
+      await markNotificationAsRead(id)
+      setNotifications((prev) =>
+        prev.map((notification) => (notification.id === id ? { ...notification, read: true } : notification)),
+      )
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error)
+    }
   }
 
   const markAsUnread = (id: string) => {
@@ -94,8 +102,13 @@ export function NotificationCenter() {
     )
   }
 
-  const deleteNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((notification) => notification.id !== id))
+  const deleteNotification = async (id: string) => {
+    try {
+      await deleteNotificationAPI(id)
+      setNotifications((prev) => prev.filter((notification) => notification.id !== id))
+    } catch (error) {
+      console.error("Failed to delete notification:", error)
+    }
   }
 
   const filteredNotifications = notifications.filter((notification) => (filter === "all" ? true : !notification.read))
@@ -140,7 +153,12 @@ export function NotificationCenter() {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredNotifications.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-secondary mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading notifications...</p>
+            </div>
+          ) : filteredNotifications.length === 0 ? (
             <div className="text-center py-8">
               <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-lg font-medium mb-2">
